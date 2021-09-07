@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Chat.Hubs;
 
 namespace Chat
 {
@@ -26,8 +27,20 @@ namespace Chat
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddCors(options =>
+            {
+                options.AddPolicy(name: "Hubs",
+                    builder =>
+                    {
+                        builder
+                            .AllowAnyHeader()
+                            .AllowAnyMethod()
+                            .WithOrigins("http://localhost:3000","https://jgrissom.github.io")
+                            .AllowCredentials();
+                    });
+            });
             services.AddControllers();
+            services.AddSignalR();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Chat", Version = "v1" });
@@ -45,6 +58,8 @@ namespace Chat
             }
 
             app.UseHttpsRedirection();
+            
+            app.UseCors("Hubs");
 
             app.UseRouting();
 
@@ -52,7 +67,7 @@ namespace Chat
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                endpoints.MapHub<ChatHub>("/hubs/chat");
             });
         }
     }
